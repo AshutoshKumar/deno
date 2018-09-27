@@ -1,4 +1,5 @@
 // Copyright 2018 the Deno authors. All rights reserved. MIT license.
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,14 +11,6 @@
 
 #include "deno.h"
 #include "internal.h"
-
-void hexdump(const uint8_t* buf, size_t len) {
-  for (size_t i = 0; i < len; ++i) {
-    char ch = buf[i];
-    printf("%02x ", ch & 0xff);
-  }
-  printf("\n");
-}
 
 namespace deno {
 
@@ -140,24 +133,10 @@ void HandleException(v8::Local<v8::Context> context,
   if (d != nullptr) {
     d->last_exception = exception_str;
   } else {
-    printf("Pre-Deno Exception %s\n", exception_str.c_str());
+    std::cerr << "Pre-Deno Exception " << exception_str << std::endl;
     exit(1);
   }
 }
-
-/*
-bool AbortOnUncaughtExceptionCallback(v8::Isolate* isolate) {
-  return true;
-}
-
-void MessageCallback2(Local<Message> message, v8::Local<v8::Value> data) {
-  printf("MessageCallback2\n\n");
-}
-
-void FatalErrorCallback2(const char* location, const char* message) {
-  printf("FatalErrorCallback2\n");
-}
-*/
 
 void ExitOnPromiseRejectCallback(
     v8::PromiseRejectMessage promise_reject_message) {
@@ -181,9 +160,8 @@ void Print(const v8::FunctionCallbackInfo<v8::Value>& args) {
   bool is_err =
       args.Length() >= 2 ? args[1]->BooleanValue(context).ToChecked() : false;
   const char* cstr = ToCString(str);
-  auto stream = is_err ? stderr : stdout;
-  fprintf(stream, "%s\n", cstr);
-  fflush(stream);
+  auto& stream = is_err ? std::cout : std::cerr;
+  stream << cstr << std::endl;
 }
 
 static v8::Local<v8::Uint8Array> ImportBuf(v8::Isolate* isolate, deno_buf buf) {
